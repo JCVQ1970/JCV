@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ore lavorate</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ore">
+<meta name="theme-color" content="#101216">
+<style>
+  :root{
+    --bg:#101216; --sup:#171A1F; --sup2:#1A1D23; --foglio:#1D2026; --campo:#14161A;
+    --linea:#2E333D; --linea2:#22262E; --testo:#E9ECEF; --dim:#8B929E; --dim2:#6B7280;
+    --ambra:#F6B73C; --ambra-bg:#241F12; --ambra-bordo:#3A3320;
+    --ferie:#5FB57A; --malattia:#E07070; --rol:#6FA8DC;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{
+    margin:0; background:var(--bg); color:var(--testo); min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  #app{max-width:480px; margin:0 auto; display:flex; flex-direction:column; min-height:100vh}
+  header{padding:calc(18px + env(safe-area-inset-top)) 16px 10px}
+  .nav-riga{display:flex; align-items:center; justify-content:space-between}
+  .nav-btn{
+    width:40px; height:40px; border-radius:10px; border:1px solid var(--linea);
+    background:var(--sup2); color:var(--testo); font-size:18px; cursor:pointer;
+  }
+  #titolo-mese{font-size:19px; font-weight:600; letter-spacing:.2px}
+  .totale{margin-top:14px; display:flex; align-items:baseline; gap:10px}
+  #totale-num{font-size:40px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--ambra); line-height:1}
+  #totale-sub{font-size:14px; color:var(--dim)}
+  #riga-assenze{margin-top:8px; font-size:13px; display:flex; gap:14px; flex-wrap:wrap}
+  .intest{display:grid; grid-template-columns:repeat(7,1fr); padding:12px 12px 6px; font-size:12px; color:var(--dim); text-align:center}
+  #griglia{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; padding:0 12px 12px}
+  .cella{
+    aspect-ratio:1/1.15; border-radius:10px; border:1px solid var(--linea2);
+    background:var(--sup); color:var(--testo); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:2px; cursor:pointer; padding:0;
+    font-family:inherit; font-size:14px;
+  }
+  .cella.weekend{color:var(--dim2)}
+  .cella.lavoro{background:var(--ambra-bg); border-color:var(--ambra-bordo); color:var(--testo)}
+  .cella.oggi{border-color:var(--ambra)}
+  .num-giorno{font-weight:600}
+  .badge{font-size:10px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.2}
+  footer{padding:4px 16px calc(24px + env(safe-area-inset-bottom)); margin-top:auto; display:flex; flex-direction:column; gap:8px}
+  .btn-largo{
+    width:100%; padding:13px; border-radius:12px; border:1px solid var(--linea);
+    background:var(--sup2); color:var(--testo); font-size:15px; font-weight:500;
+    cursor:pointer; font-family:inherit;
+  }
+  .btn-largo:disabled{opacity:.45}
+  .riga-backup{display:flex; gap:8px}
+  .riga-backup .btn-largo{font-size:13.5px; padding:11px; color:var(--dim)}
+  /* foglio */
+  #velo{position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:flex-end; z-index:10}
+  #velo.aperto{display:flex}
+  #foglio{
+    width:100%; max-width:480px; margin:0 auto; background:var(--foglio);
+    border-radius:20px 20px 0 0; padding:20px 20px calc(28px + env(safe-area-inset-bottom));
+    max-height:85vh; overflow-y:auto;
+  }
+  .maniglia{width:36px; height:4px; border-radius:2px; background:#3A404B; margin:0 auto 16px}
+  #foglio-titolo{font-size:17px; font-weight:600; margin-bottom:16px}
+  .campo-riga{display:flex; gap:10px; margin-bottom:12px}
+  .campo{flex:1}
+  label{font-size:13px; color:var(--dim); margin-bottom:6px; display:block}
+  input{
+    width:100%; padding:12px; border-radius:10px; border:1px solid var(--linea);
+    background:var(--campo); color:var(--testo); font-size:16px; font-family:inherit;
+    font-variant-numeric:tabular-nums; color-scheme:dark;
+  }
+  .segmenti{display:flex; gap:8px; margin-bottom:12px}
+  .segmento{
+    flex:1; padding:10px 0; border-radius:10px; font-size:14px; font-weight:600;
+    border:1px solid var(--linea); background:var(--campo); color:var(--dim);
+    cursor:pointer; font-family:inherit;
+  }
+  .segmento.attivo-ferie{border-color:var(--ferie); background:rgba(95,181,122,.13); color:var(--ferie)}
+  .segmento.attivo-malattia{border-color:var(--malattia); background:rgba(224,112,112,.13); color:var(--malattia)}
+  .segmento.attivo-rol{border-color:var(--rol); background:rgba(111,168,220,.13); color:var(--rol)}
+  #campo-ore-assenza{display:none; margin-bottom:4px}
+  #anteprima{text-align:center; padding:10px 0 16px; font-size:15px; color:var(--dim)}
+  #anteprima b{color:var(--ambra); font-variant-numeric:tabular-nums}
+  .azioni{display:flex; gap:10px}
+  #btn-salva{
+    flex:2; padding:14px; border-radius:12px; border:none; background:var(--ambra);
+    color:#14161A; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  #btn-elimina{
+    flex:1; padding:14px; border-radius:12px; border:1px solid #4A2E2E;
+    background:transparent; color:var(--malattia); font-size:15px; cursor:pointer;
+    font-family:inherit; display:none;
+  }
+  #file-import{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="nav-riga">
+      <button class="nav-btn" id="btn-prev" aria-label="Mese precedente">&#8249;</button>
+      <div id="titolo-mese"></div>
+      <button class="nav-btn" id="btn-next" aria-label="Mese successivo">&#8250;</button>
+    </div>
+    <div class="totale">
+      <span id="totale-num">0h</span>
+      <span id="totale-sub"></span>
+    </div>
+    <div id="riga-assenze"></div>
+  </header>
+
+  <div class="intest" id="intest"></div>
+  <div id="griglia"></div>
+
+  <footer>
+    <button class="btn-largo" id="btn-copia">Copia riepilogo del mese</button>
+    <div class="riga-backup">
+      <button class="btn-largo" id="btn-export">Scarica backup</button>
+      <button class="btn-largo" id="btn-import">Ripristina backup</button>
+    </div>
+  </footer>
+</div>
+
+<div id="velo">
+  <div id="foglio">
+    <div class="maniglia"></div>
+    <div id="foglio-titolo"></div>
+    <div class="campo-riga">
+      <div class="campo"><label>Entrata</label><input type="time" id="in-entrata"></div>
+      <div class="campo"><label>Uscita</label><input type="time" id="in-uscita"></div>
+      <div class="campo"><label>Pausa (min)</label><input type="number" id="in-pausa" inputmode="numeric" min="0" step="5"></div>
+    </div>
+    <label>Assenza</label>
+    <div class="segmenti">
+      <button class="segmento" data-tipo="ferie">Ferie</button>
+      <button class="segmento" data-tipo="malattia">Malattia</button>
+      <button class="segmento" data-tipo="rol">ROL</button>
+    </div>
+    <div class="campo" id="campo-ore-assenza">
+      <label id="lbl-ore-assenza">Ore di assenza</label>
+      <input type="number" id="in-ore-assenza" inputmode="decimal" min="0" max="24" step="0.5">
+    </div>
+    <div id="anteprima"></div>
+    <div class="azioni">
+      <button id="btn-elimina">Elimina</button>
+      <button id="btn-salva">Salva</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-import" accept=".json,application/json">
+
+<script>
+"use strict";
+// ---------- costanti ----------
+const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const GIORNI = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
+const DEFAULT_ENTRATA = "08:00", DEFAULT_USCITA = "17:00", DEFAULT_PAUSA = 60;
+const TIPI = {
+  ferie:    {label:"Ferie",    sigla:"F", css:"var(--ferie)",    cls:"attivo-ferie"},
+  malattia: {label:"Malattia", sigla:"M", css:"var(--malattia)", cls:"attivo-malattia"},
+  rol:      {label:"ROL",      sigla:"R", css:"var(--rol)",      cls:"attivo-rol"},
+};
+const PREFISSO = "ore:";
+
+// ---------- stato ----------
+const oggi = new Date();
+let anno = oggi.getFullYear(), mese = oggi.getMonth();
+let dati = {};              // dati del mese corrente
+let giornoAperto = null;
+let tipoAssenza = "";
+
+// ---------- utilità ----------
+const pad = n => String(n).padStart(2,"0");
+const chiave = () => PREFISSO + anno + "-" + pad(mese+1);
+const $ = id => document.getElementById(id);
+
+function minutiDa(hhmm){
+  if(!hhmm) return null;
+  const [h,m] = hhmm.split(":").map(Number);
+  return h*60+m;
+}
+function minutiLavorati(g){
+  const e = minutiDa(g && g.entrata), u = minutiDa(g && g.uscita);
+  if(e===null || u===null) return 0;
+  let diff = u-e;
+  if(diff<0) diff += 1440;                 // turno a cavallo della mezzanotte
+  diff -= Number((g && g.pausa) || 0);
+  return Math.max(0,diff);
+}
+function formatOre(min){
+  const h = Math.floor(min/60), m = min%60;
+  if(min===0) return "0h";
+  return m===0 ? h+"h" : h+"h "+pad(m);
+}
+
+// ---------- persistenza ----------
+function carica(){
+  try{ dati = JSON.parse(localStorage.getItem(chiave())) || {}; }
+  catch(e){ dati = {}; }
+}
+function salva(){
+  try{ localStorage.setItem(chiave(), JSON.stringify(dati)); }
+  catch(e){ alert("Salvataggio non riuscito: spazio esaurito o navigazione privata."); }
+}
+
+// ---------- render ----------
+function render(){
+  $("titolo-mese").textContent = MESI[mese]+" "+anno;
+
+  // totali
+  let totMin = 0, giorniLav = 0;
+  const totAss = {};
+  for(const k in dati){
+    const d = dati[k];
+    const m = minutiLavorati(d);
+    if(m>0){ totMin += m; giorniLav++; }
+    if(d.tipoAssenza && Number(d.oreAssenza)>0){
+      totAss[d.tipoAssenza] = (totAss[d.tipoAssenza]||0) + Number(d.oreAssenza)*60;
+    }
+  }
+  $("totale-num").textContent = formatOre(totMin);
+  $("totale-sub").textContent = giorniLav + (giorniLav===1 ? " giorno lavorato" : " giorni lavorati");
+  $("riga-assenze").innerHTML = Object.keys(totAss).map(t =>
+    '<span style="color:'+TIPI[t].css+'">'+TIPI[t].label+" "+formatOre(totAss[t])+"</span>"
+  ).join("");
+
+  // griglia
+  const nGiorni = new Date(anno, mese+1, 0).getDate();
+  const primo = (new Date(anno, mese, 1).getDay()+6)%7;   // 0 = lunedì
+  const griglia = $("griglia");
+  griglia.innerHTML = "";
+  for(let i=0;i<primo;i++) griglia.appendChild(document.createElement("div"));
+  for(let g=1; g<=nGiorni; g++){
+    const d = dati[g];
+    const min = minutiLavorati(d);
+    const ass = d && d.tipoAssenza ? TIPI[d.tipoAssenza] : null;
+    const b = document.createElement("button");
+    b.className = "cella";
+    const idx = (primo+g-1)%7;
+    if(idx>=5 && !min && !ass) b.classList.add("weekend");
+    if(min>0) b.classList.add("lavoro");
+    if(g===oggi.getDate() && mese===oggi.getMonth() && anno===oggi.getFullYear()) b.classList.add("oggi");
+    if(ass && !min){ b.style.background = "color-mix(in srgb, "+ass.css+" 8%, var(--sup))"; b.style.borderColor = ass.css; b.style.borderColor = "color-mix(in srgb, "+ass.css+" 33%, transparent)"; }
+    let html = '<span class="num-giorno">'+g+"</span>";
+    if(min>0) html += '<span class="badge" style="color:var(--ambra)">'+formatOre(min)+"</span>";
+    if(ass) html += '<span class="badge" style="color:'+ass.css+'">'+ass.sigla+" "+formatOre(Number(d.oreAssenza)*60)+"</span>";
+    b.innerHTML = html;
+    b.addEventListener("click", () => apriGiorno(g));
+    griglia.appendChild(b);
+  }
+
+  $("btn-copia").disabled = (totMin===0 && Object.keys(totAss).length===0);
+}
+
+// ---------- foglio ----------
+function apriGiorno(g){
+  giornoAperto = g;
+  const d = dati[g];
+  if(d){
+    $("in-entrata").value = d.entrata || "";
+    $("in-uscita").value  = d.uscita  || "";
+    $("in-pausa").value   = d.pausa != null ? d.pausa : 0;
+    tipoAssenza = d.tipoAssenza || "";
+    $("in-ore-assenza").value = d.oreAssenza != null ? d.oreAssenza : 8;
+  } else {
+    $("in-entrata").value = DEFAULT_ENTRATA;
+    $("in-uscita").value  = DEFAULT_USCITA;
+    $("in-pausa").value   = DEFAULT_PAUSA;
+    tipoAssenza = "";
+    $("in-ore-assenza").value = 8;
+  }
+  const dow = GIORNI[(new Date(anno, mese, g).getDay()+6)%7];
+  $("foglio-titolo").textContent = dow+" "+g+" "+MESI[mese];
+  $("btn-elimina").style.display = d ? "block" : "none";
+  aggiornaFoglio();
+  $("velo").classList.add("aperto");
+}
+function chiudiFoglio(){ $("velo").classList.remove("aperto"); giornoAperto = null; }
+
+function aggiornaFoglio(){
+  document.querySelectorAll(".segmento").forEach(b => {
+    const t = b.dataset.tipo;
+    b.className = "segmento" + (tipoAssenza===t ? " "+TIPI[t].cls : "");
+  });
+  $("campo-ore-assenza").style.display = tipoAssenza ? "block" : "none";
+  if(tipoAssenza) $("lbl-ore-assenza").textContent = "Ore di "+TIPI[tipoAssenza].label.toLowerCase();
+  const bozza = { entrata:$("in-entrata").value, uscita:$("in-uscita").value, pausa:$("in-pausa").value };
+  let html = "Ore lavorate: <b>"+formatOre(minutiLavorati(bozza))+"</b>";
+  const oa = Number($("in-ore-assenza").value);
+  if(tipoAssenza && oa>0){
+    html += ' <span style="color:'+TIPI[tipoAssenza].css+'">&nbsp;+&nbsp;'+TIPI[tipoAssenza].label+" "+formatOre(oa*60)+"</span>";
+  }
+  $("anteprima").innerHTML = html;
+}
+
+function salvaGiorno(){
+  const entrata = $("in-entrata").value, uscita = $("in-uscita").value;
+  const pausa = Number($("in-pausa").value)||0;
+  if(!entrata && !uscita && !tipoAssenza){
+    delete dati[giornoAperto];
+  } else {
+    const d = { entrata, uscita, pausa };
+    if(tipoAssenza){ d.tipoAssenza = tipoAssenza; d.oreAssenza = Number($("in-ore-assenza").value)||0; }
+    dati[giornoAperto] = d;
+  }
+  salva(); chiudiFoglio(); render();
+}
+function eliminaGiorno(){
+  delete dati[giornoAperto];
+  salva(); chiudiFoglio(); render();
+}
+function toggleAssenza(t){
+  if(tipoAssenza===t){ tipoAssenza = ""; }
+  else {
+    tipoAssenza = t;
+    // giornata intera di assenza: svuota gli orari se erano quelli standard
+    if($("in-entrata").value===DEFAULT_ENTRATA && $("in-uscita").value===DEFAULT_USCITA){
+      $("in-entrata").value = ""; $("in-uscita").value = ""; $("in-pausa").value = 0;
+    }
+  }
+  aggiornaFoglio();
+}
+
+// ---------- riepilogo e backup ----------
+function copiaRiepilogo(){
+  const righe = Object.keys(dati).map(Number).sort((a,b)=>a-b).map(g => {
+    const d = dati[g], parti = [];
+    if(d.entrata || d.uscita){
+      const p = d.pausa ? " (pausa "+d.pausa+"m)" : "";
+      parti.push((d.entrata||"--:--")+" \u2192 "+(d.uscita||"--:--")+p+" = "+formatOre(minutiLavorati(d)));
+    }
+    if(d.tipoAssenza) parti.push(TIPI[d.tipoAssenza].label+" "+formatOre(Number(d.oreAssenza)*60));
+    return parti.length ? pad(g)+"/"+pad(mese+1)+"  "+parti.join("  +  ") : null;
+  }).filter(Boolean);
+
+  let totMin=0, nG=0; const totAss={};
+  for(const k in dati){
+    const m = minutiLavorati(dati[k]);
+    if(m>0){ totMin+=m; nG++; }
+    const d = dati[k];
+    if(d.tipoAssenza && Number(d.oreAssenza)>0) totAss[d.tipoAssenza]=(totAss[d.tipoAssenza]||0)+Number(d.oreAssenza)*60;
+  }
+  const rigaAss = Object.keys(totAss).map(t => TIPI[t].label+": "+formatOre(totAss[t])).join(", ");
+  const testo = "Ore lavorate \u2014 "+MESI[mese]+" "+anno+"\n"+righe.join("\n")+
+    "\n\nTotale lavorato: "+formatOre(totMin)+" su "+nG+" giorni"+(rigaAss ? "\n"+rigaAss : "");
+  navigator.clipboard.writeText(testo).then(() => {
+    const b = $("btn-copia"); b.textContent = "Riepilogo copiato \u2713";
+    setTimeout(() => { b.textContent = "Copia riepilogo del mese"; }, 2000);
+  }).catch(() => alert("Copia non riuscita. Riprova."));
+}
+
+function esportaBackup(){
+  const tutto = {};
+  for(let i=0; i<localStorage.length; i++){
+    const k = localStorage.key(i);
+    if(k && k.indexOf(PREFISSO)===0) tutto[k] = JSON.parse(localStorage.getItem(k));
+  }
+  const blob = new Blob([JSON.stringify(tutto, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "backup-ore-"+oggi.getFullYear()+pad(oggi.getMonth()+1)+pad(oggi.getDate())+".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importaBackup(file){
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const tutto = JSON.parse(r.result);
+      let n = 0;
+      for(const k in tutto){
+        if(k.indexOf(PREFISSO)===0){ localStorage.setItem(k, JSON.stringify(tutto[k])); n++; }
+      }
+      carica(); render();
+      alert("Ripristinati "+n+" mesi dal backup.");
+    }catch(e){ alert("File di backup non valido."); }
+  };
+  r.readAsText(file);
+}
+
+// ---------- eventi ----------
+$("btn-prev").addEventListener("click", () => { mese--; if(mese<0){mese=11;anno--;} carica(); render(); });
+$("btn-next").addEventListener("click", () => { mese++; if(mese>11){mese=0;anno++;} carica(); render(); });
+$("btn-copia").addEventListener("click", copiaRiepilogo);
+$("btn-export").addEventListener("click", esportaBackup);
+$("btn-import").addEventListener("click", () => $("file-import").click());
+$("file-import").addEventListener("change", e => { if(e.target.files[0]) importaBackup(e.target.files[0]); e.target.value=""; });
+$("btn-salva").addEventListener("click", salvaGiorno);
+$("btn-elimina").addEventListener("click", eliminaGiorno);
+$("velo").addEventListener("click", e => { if(e.target.id==="velo") chiudiFoglio(); });
+document.querySelectorAll(".segmento").forEach(b => b.addEventListener("click", () => toggleAssenza(b.dataset.tipo)));
+["in-entrata","in-uscita","in-pausa","in-ore-assenza"].forEach(id => $(id).addEventListener("input", aggiornaFoglio));
+
+// intestazione giorni
+$("intest").innerHTML = GIORNI.map(g => "<div>"+g+"</div>").join("");
+
+carica();
+render();
+</script>
+</body>
+</html>
